@@ -1,0 +1,45 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.9'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.beyond'
+version = '0.0.1-SNAPSHOT'
+description = 'basic project for Spring Boot'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+// gradle build tool을 사용하더라도 저장소로 maven repository를 사용.
+repositories {
+	mavenCentral()
+}
+
+// dependencies(의존성): 이 프로젝트에서 사용할 라이브러리(외부 모듈) 목록
+// - Spring Web: HTTP 통신(요청/응답) 처리를 위한 라이브러리 (기본 의존성) (getMapping 어노테이션 포함)
+// - Test / JUnit: 테스트 작성을 위한 라이브러리
+//   * 테스트란?
+//     - 코드로 코드를 검증하는 개념
+//     - 하나의 코드(샌드박스)를 실행하면 input 값과 output 값이 존재함
+//     - 사람이 하는 테스트: 실제 응답값과 예상 출력값이 동일한지 직접 확인
+//     - 여기서 말하는 테스트: test 디렉터리에서 테스트 코드를 작성해,
+//       코드가 기대한 대로 동작하는지 자동으로 검증(코드 검수)하는 것
+//     - 이 과정에서 사용하는 라이브러리가 Test / JUnit
+// - lombok : Getter, Setter 등 개발의 편의성을 증대시켜주는 각종 어노테이션을 포함하는 의존성 (플러그인 설치 주의)
+// - thymeleaf : 스프링에서 화면을 만들어 사용자에게 주는 MVC 기술 중 하나
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

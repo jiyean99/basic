@@ -1,0 +1,4 @@
+# spring에서 application.properties 또는 yml은 환경설정파일
+# yml형식은 계층 구조를 가진 가독성 좋은 형식
+server:
+  port : 8081
