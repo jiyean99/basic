@@ -1,48 +1,64 @@
 package com.beyond.basic.b1_basic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-// Controller 어노테이션을 통해 스프링에 의해 객체가 생성되고, 관리되어 개발자가 직접 객체를 생성할 필요 없음.
-// @Controller 어노테이션을 선언하는 순간, @Controller 어노테이션과 url 매핑을 통해 사용자의 요청이 메서드로 분기처리된다.
-// Controller를 통해 내부적으로 new 객체를 만들어주고, 사용자 요청을 통해 라우팅 시켜주게 되는 것
-// 이 때 controller 레벨에서는 메서드 이름이 크게 유의미 하지 않다. (url 패턴이 유의미하고 그냥 가독성만을 위해 작성한다고 생각해라)
+/*
+ * [Controller 개요]
+ * - @Controller가 붙은 클래스는 스프링이 객체(빈)로 생성/관리함 → 개발자가 new로 생성할 필요 없음.
+ * - 요청은 "HTTP 메서드 + URL 패턴" 기준으로 적절한 컨트롤러/메서드로 라우팅(분기)됨.
+ * - 컨트롤러 메서드 이름은 기능적으로 중요하지 않음 → 가독성을 위한 이름임(분기 기준은 URL/메서드).
+ *
+ * [요청/응답 관점]
+ * - 실제로는 HTTP 응답 전체(상태코드/헤더/바디)를 내려주지만, 보통 컨트롤러에서는 주로 바디(또는 뷰 이름)만 설정함.
+ * - 상태코드/헤더도 필요하면 커스텀 가능함.
+ */
 @Controller
-@RequestMapping("/member") // 해당 어노테이션으로 공통처리
+@RequestMapping("/member") // "/member"로 시작하는 요청을 공통 prefix로 묶어 처리함
 public class MemberController {
-    // GET 요청 리턴의 case : 1)text, 2)JSON, 3)html(MVC 아키텍쳐)
+    /*
+     * [GET 요청 응답 3가지 형태]
+     * 1) text 반환 (@ResponseBody + String)
+     * 2) JSON 반환 (@ResponseBody + Object) → 객체를 반환하면 자동으로 JSON 직렬화됨
+     * 3) HTML(View) 반환 (@ResponseBody 없음 + String) → templates에서 뷰 이름으로 화면을 찾아 렌더링함
+     *
+     * [@ResponseBody]
+     * - 반환값을 "데이터(텍스트/JSON)"로 응답 바디에 직접 넣어 반환할 때 사용함.
+     * - 화면(HTML 템플릿)을 반환할 때는 보통 생략함(생략 시 templates에서 뷰 탐색).
+     *
+     * [@RestController]
+     * - @Controller + @ResponseBody 조합임.
+     * - 기본적으로 데이터(JSON/text) 응답 전용이라 뷰 렌더링(MVC 화면 반환) 용도로는 부적합함.
+     */
 
-    // 우리 눈에는 안보이지만 http 문서를 만들어서 사용자에게 보냈고(우리는 바디부분만 세팅), 원하는 상태 코드와 상태 문구등 커스텀 조작이 가능하다.
-
-    // case1) 서버가 사용자에게 text 데이터 return
-    // ResponseBody : 데이터(text, json)를 리턴하는 경우 사용, 화면(html)을 리턴하는 경우는 ResponseBody 생략(생략된 경우는 templates로 화면을 찾으러 감)
-    // RestController : Controller + ResponseBody, 해당 어노테이션 사용 시 화면을 보여줄 수 없음(MVC 패턴 불가)
+    // case 1) text 응답: "홍길동" 문자열을 HTTP 응답 바디로 반환함
     @GetMapping("")
     @ResponseBody
     public String textDataReturn() {
-
         return "홍길동";
     }
 
-    // case2) 서버가 사용자에게 json 형식의 문자 데이터 return
+    // case 2) JSON 응답: 객체를 반환하면 스프링이 자동으로 JSON으로 직렬화하여 반환함
     @GetMapping("/json")
     @ResponseBody
     public Member jsonDataReturn() throws JsonProcessingException {
         Member m1 = new Member("이지연", "jiyean@naver.com");
-        // 직접 JSON을 직렬화할 필요 없이 return 타입에 객체가 있다면 자동으로 직렬화해준다.
-        // 또한 아래와 같이 return 하게 되면 JSON이 아니고 String으로 return이 된다.
-        //ObjectMapper o1 = new ObjectMapper();
-        //String data = o1.writeValueAsString(m1);
+
+        // ObjectMapper로 직접 JSON 문자열을 만들 필요 없음.
+        // 참고로 JSON 문자열(String)을 만들어서 반환하면, "객체(JSON)"가 아니라 "문자열" 응답으로 내려가게 됨.
+        // ObjectMapper o1 = new ObjectMapper();
+        // String data = o1.writeValueAsString(m1);
+        // return data;
+
         return m1;
     }
 
-    // case3) 서버가 사용자에게 html return
-    // ResponseBody가 없고, return 타입은 String인 경우 스프링은 templates 폴더 하위의 return된 문자열과 동일한 html 문서를 조회하여 return
-    // 단, 타임리프, JSP 등의 의존성 필요
+    // case 3) HTML(View) 응답: @ResponseBody가 없고 String을 반환하면 뷰 이름으로 해석함
+    // - templates/{뷰이름}.html(또는 템플릿 확장자) 파일을 찾아 렌더링하여 반환함
+    // - Thymeleaf/JSP 등 템플릿 엔진 의존성이 필요함
     @GetMapping("/html")
     public String htmlReturn() {
         return "simple_html";
