@@ -1,5 +1,7 @@
 package com.beyond.basic;
 
+import com.beyond.basic.b1_basic.Member;
+import com.beyond.basic.b1_basic.MemberController;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
