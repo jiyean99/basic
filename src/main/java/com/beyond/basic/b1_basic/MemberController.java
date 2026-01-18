@@ -47,7 +47,7 @@ public class MemberController {
     // case 2) JSON 응답: 객체를 반환하면 스프링이 자동으로 JSON으로 직렬화하여 반환함
     @GetMapping("/json")
     @ResponseBody
-    public Member jsonDataReturn() throws JsonProcessingException {
+    public Member jsonDataReturn() {
         Member m1 = new Member("이지연", "jiyean@naver.com");
 
         // ObjectMapper로 직접 JSON 문자열을 만들 필요 없음.
@@ -186,7 +186,8 @@ public class MemberController {
         System.out.println("File name === " + profileImg.getOriginalFilename());
         return "OK";
     }
-  // case 2-2) 여러개의 파일이 있는 경우
+
+    // case 2-2) 여러개의 파일이 있는 경우
     @PostMapping("/multipart-formdata-plura")
     @ResponseBody
     public String pluraMultipartFormData(@ModelAttribute Member member,
@@ -205,6 +206,7 @@ public class MemberController {
         System.out.println("Member === " + member);
         return "OK";
     }
+
     // case 3-2) 배열 형식의 JSON 데이터 처리
     // - 데이터 형식 : [{"name": "홍길동1", "email": "hong1@naver.com"}, {"name": "홍길동2", "email": "hong2@naver.com"}, {"name": "홍길동3", "email": "hong3@naver.com"}]
     @PostMapping("/json-list")

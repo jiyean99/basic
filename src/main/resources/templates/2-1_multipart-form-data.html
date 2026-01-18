@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>multipart/form-data 단일 파일</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <form>
+        이름: <input type="text" id="name">
+        이메일: <input type="text" id="email">
+        <!--  기본적으로 HTML의 이미지는 다중으로 담기도록 설계되어있다 -->
+        프로필: <input type="file" id="fileList">
+        <button type="button" onClick="postData()">제출</button>
+    </form>
+</body>
+<script>
+    const postData = async() => {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+
+        const fileList = document.getElementById("fileList");
+        // 기본적으로 HTML의 file은 배열을 담을 수 있는 구조가 될 수 있으므로 단일파일을 추출해줘야한다.
+        const file = fileList.files[0];
+
+        const serverData = new FormData();
+        serverData.append('name', name);
+        serverData.append('email', email);
+        serverData.append('profileImage', file);
+
+        await axios.post("http://localhost:8081/member/multipart-formdata", serverData);
+    }
+</script>
+</html>

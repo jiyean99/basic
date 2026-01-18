@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>form 입력</title>
+</head>
+<body>
+<form>
+    이름 : <input type="text" id="name" name="name">
+    이메일 : <input type="text" id="email" name="email">
+    프로필이미지 : <input type="file" id="profileImage"  name="profileImage" accept="image/*">
+    <button type="button" onclick="postData()">제출</button>
+</form>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+    // 데이터 형식 : member=(json데이터)&profileImage=(바이너리데이터)
+    async function postData(){
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const member = {name, email};
+        const memberJson = JSON.stringify(member);
+        const fileInput = document.getElementById('profileImage');
+        const file = fileInput.files[0];
+        const serverData = new FormData();
+        // js에서 Blob함수는 데이터형을 지정/변환할 때 사용
+        // Blob 클래스를 사용하여 file 폼 데이터 처리 및 member 데이터가 JSON 데이터임을 명시
+        serverData.append('member', new Blob([memberJson], {type:"application/json"}));
+        serverData.append('profileImg', file);
+        await axios.post("http://localhost:8081/member/json-file", serverData);
+    }
+</script>
+</body>
+</html>

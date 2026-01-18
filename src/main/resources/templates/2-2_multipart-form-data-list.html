@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>multipart/form-data 다중 파일</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<form>
+    이름: <input type="text" id="name">
+    이메일: <input type="text" id="email">
+    <!--  multiple : 파일이 여러개 담기도록 추가하는 설정 -->
+    프로필: <input type="file" id="fileList" multiple>
+    <button type="button" onClick="postData()">제출</button>
+</form>
+</body>
+<script>
+    const postData = async() => {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+
+        const fileList = document.getElementById("fileList");
+
+        const serverData = new FormData();
+        serverData.append('name', name);
+        serverData.append('email', email);
+
+        // profileImages에 이미지들을 반복해서 담으면서 profileImages를 배열로 생성
+        for(let i = 0; i < fileList.files.length; i ++){
+            serverData.append('profileImages', fileList.files[i]);
+        }
+
+        await axios.post("http://localhost:8081/member/multipart-formdata-plura", serverData);
+    }
+</script>
+</html>

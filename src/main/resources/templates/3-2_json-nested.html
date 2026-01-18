@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JSON 중첩 데이터 처리</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<form>
+    이름 : <input type="text" id="name" name="name">
+    이메일 : <input type="text" id="email" name="email">
+    <div id="grades">
+        <p>성적정보</p>
+        <div class="grade">
+            수업명 : <input type="text" class="subjects" name="subject"> <br>
+            점수 : <input type="text" class="points" name="point">
+        </div>
+        <div class="grade">
+            수업명 : <input type="text" class="subjects" name="subject"> <br>
+            점수 : <input type="text" class="points" name="point">
+        </div>
+    </div>
+    <button type="button" onclick="postData()">제출</button>
+</form>
+</body>
+<script>
+    // 조립해야할 데이터 형태 : {"name": String, "email": String, "scores":[{"subject": String, "point": int}, {"subject": String, "point": int}]}
+    // grade는 단일이 아니기 때문에 class로 선언을 하였고, 각각의 값을 개별의 객체로 생성했다.
+    const postData = async() => {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        let scores = [];
+        const grades = document.getElementsByClassName('grade');
+        for(let i = 0; i< grades.length; i++){
+            const subject = document.getElementsByClassName('subjects')[i].value;
+            const point = document.getElementsByClassName('points')[i].value;
+            const grade = {subject, point};
+            scores.push(grade);
+        }
+        const serverData = {name, email, scores};
+        await axios.post("http://localhost:8081/member/json-nested", serverData);
+        alert("제출이 완료되었습니다.");
+        window.location.reload();
+    }
+</script>
+</html>
