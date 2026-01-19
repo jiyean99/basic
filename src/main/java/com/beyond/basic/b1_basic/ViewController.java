@@ -19,6 +19,11 @@ public class ViewController {
         return "2-1_multipart-form-data";
     }
 
+    @GetMapping("/2-2_multipart-form-data-list")
+    static String formData2(){
+        return "2-2_multipart-form-data-list";
+    }
+
     @GetMapping("/3-1_json")
     static String json1(){
         return "3-1_json";
