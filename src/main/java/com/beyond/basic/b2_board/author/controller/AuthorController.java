@@ -11,11 +11,26 @@ import java.util.List;
 @RestController
 @RequestMapping("/author")
 public class AuthorController {
+    // [AuthorService -> 왜 이 코드를 추가했나]
+    // - 컨트롤러 메서드가 실행될 때마다 service를 new로 생성하는 구조를 피하기 위함
+    //
+    // [기존에 어떤 문제가 있었나]
+    // - 메서드 호출 시점마다 AuthorService가 새로 만들어지면 “매번 초기화”가 발생함
+    // - 특히 service 내부에 상태값/저장소(List 등)가 있으면, 호출할 때마다 데이터가 날아가는 문제가 생길 수 있음
+    //
+    // [일단 어떻게 임시로 고쳤나]
+    // - 컨트롤러 객체가 생성되는 시점(생성자)에서 AuthorService를 1번만 생성해 필드에 보관함
+    // - 이후 컨트롤러의 여러 메서드에서는 같은 service 인스턴스를 재사용함(초기화 반복 방지)
+    //
+    // [주의(실무 관점)]
+    // - 이 방식은 스프링 DI(@Autowired/생성자 주입)를 쓰지 않고 개발자가 직접 new로 의존성을 연결하는 형태임
+    // - 실무에서 권장되는 패턴은 아니고, 현재 실습 단계에서 “객체 초기화 문제”를 피하려는 임시 구성임
     private AuthorService authorService;
 
     public AuthorController() {
         this.authorService = new AuthorService();
     }
+
     // Author 클래스 변수 name, email, password
 
     // 1. 회원가입
