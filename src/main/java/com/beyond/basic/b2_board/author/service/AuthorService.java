@@ -6,6 +6,7 @@ import com.beyond.basic.b2_board.author.dto.AuthorDetailDto;
 import com.beyond.basic.b2_board.author.dto.AuthorListDto;
 import com.beyond.basic.b2_board.author.repository.AuthorJdbcRepository;
 import com.beyond.basic.b2_board.author.repository.AuthorMemoryRepository;
+import com.beyond.basic.b2_board.author.repository.AuthorMybatisRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -60,7 +61,7 @@ public class AuthorService {
 
     /// DI(의존성) 주입 방법 - 1. Autowired
 //    @Autowired
-//    private AuthorMemoryRepository authorMemoryRepository;
+//    private AuthorMemoryRepository authorRepository;
 
     /*
      * =========================================================
@@ -82,22 +83,33 @@ public class AuthorService {
      * - 즉 매번 new로 만들지 않고, 스프링이 관리하는 인스턴스를 주입받아 사용한다.
      */
     /// DI(의존성) 주입 방법 - 2. 생성자 주입 방식
-//    private final AuthorMemoryRepository authorMemoryRepository;
+    /// 현재 생성자 주입방식으로 작성하였기에 다형성 설계가 가능하므로,
+    // TODO [in-memory 레파지토리 사용 예시]
+//    private final AuthorMemoryRepository authorRepository;
 //
 //    @Autowired // 해당 생성자를 주입받겠다는 의미로 해당 어노테이션 추가(생성자가 하나밖에 없을 때에는 생략 가능)
 //    public AuthorService() {
-//        this.authorMemoryRepository = new AuthorMemoryRepository();
+//        this.authorRepository = new AuthorMemoryRepository();
 //    }
 
-    private final AuthorJdbcRepository authorJdbcRepository;
+    // TODO [jdbc 연결 레파지토리 사용 예시]
+//    private final AuthorJdbcRepository authorRepository;
+//
+//    @Autowired
+//    public AuthorService(AuthorJdbcRepository authorRepository) {
+//        this.authorRepository = authorRepository;
+//    }
 
-    @Autowired // 해당 생성자를 주입받겠다는 의미로 해당 어노테이션 추가(생성자가 하나밖에 없을 때에는 생략 가능)
-    public AuthorService(AuthorJdbcRepository authorJdbcRepository) {
-        this.authorJdbcRepository = authorJdbcRepository;
+    // TODO [mybatis 연결 레파지토리 사용 예시]
+    private final AuthorMybatisRepository authorRepository;
+
+    @Autowired
+    public AuthorService(AuthorMybatisRepository authorRepository) {
+        this.authorRepository = authorRepository;
     }
 
     /// DI(의존성) 주입 방법 - 3. RequiredArgsConstructor 어노테이션 사용
-    // private final AuthorMemoryRepository authorMemoryRepository;
+    // private final AuthorMemoryRepository authorRepository;
 
     /*
      * =========================================================
@@ -128,18 +140,25 @@ public class AuthorService {
 //                .build();
 
         /// 2. toEntity로 조립
-        Author author = dto.toEntity();
+//        Author author = dto.toEntity();
 
         /// 1. AuthorMemoryRepository 사용
-//        authorMemoryRepository.save(author);
+//        authorRepository.save(author);
 
         /// 2. AuthorJdbcRepository 사용
-        authorJdbcRepository.save(author);
+//        authorRepository.save(author);
+
+        /// 예외처리 로직 추가
+        if (authorRepository.findByEmail(dto.toEntity().getEmail()).isPresent()) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+        Author author = dto.toEntity();
+        authorRepository.save(author);
     }
 
     public List<AuthorListDto> findAll() {
         /// [기존 방식]
-//        List<Author> authorList = authorMemoryRepository.findAll();
+//        List<Author> authorList = authorRepository.findAll();
 //        List<AuthorListDto> authorListDtoList = new ArrayList<>();
 //        for (Author a : authorList) {
 //            AuthorListDto dto = new AuthorListDto(a.getId(), a.getName(), a.getEmail());
@@ -148,7 +167,7 @@ public class AuthorService {
 //        return authorListDtoList;
 
         /// [fromEntity 방식으로 객체 조립 방식]
-//        List<Author> authorList = authorMemoryRepository.findAll();
+//        List<Author> authorList = authorRepository.findAll();
 //        List<AuthorListDto> authorListDtoList = new ArrayList<>();
 //        for (Author author: authorList){
 //            AuthorListDto dto = AuthorListDto.fromEntity(author);
@@ -158,14 +177,14 @@ public class AuthorService {
 
         /// [fromEntity 방식+stream api]
         /// 1. AuthorMemoryRepository 사용
-//        return authorMemoryRepository
+//        return authorRepository
 //                .findAll()
 //                .stream()
 //                .map(a -> AuthorListDto.fromEntity(a))
 //                .collect(Collectors.toList());
 
         /// 2. AuthorJdbcRepository 사용
-        return authorJdbcRepository
+        return authorRepository
                 .findAll()
                 .stream()
                 .map(a -> AuthorListDto.fromEntity(a))
@@ -174,9 +193,9 @@ public class AuthorService {
 
     public AuthorDetailDto findById(Long id) {
         /// 1. AuthorMemoryRepository 사
-//        Optional<Author> optionalAuthor = authorMemoryRepository.findById(id);
+//        Optional<Author> optionalAuthor = authorRepository.findById(id);
         /// 2. AuthorJdbcRepository 사용
-        Optional<Author> optionalAuthor = authorJdbcRepository.findById(id);
+        Optional<Author> optionalAuthor = authorRepository.findById(id);
         Author author = optionalAuthor.orElseThrow(() -> new NoSuchElementException("Entity is not found")); // 추후 JPA 의존성 설치 후에는 Entity가 없다는 에러를 던질것이다.
 
         /// 1-1. DTO 직접 조립(생성자만을 활용한 객체 조립)
@@ -196,6 +215,19 @@ public class AuthorService {
         // fromEntity는 아직 DTO객체가 만들어지지 않은 상태이므로, static 메서드로 설계
         AuthorDetailDto dto = AuthorDetailDto.fromEntity(author);
         return dto;
+    }
+
+    public void delete(Long id) {
+        // cf) DB에서 조회작업과 삭제작업 중 무엇의 부하가 더 클까? 삭제작업이 더 자원이 소모됨(조회작업이 더 가벼움)
+
+        /// 방법1 : 레파지토리에 바로 delete 수행하기
+        // - 에러가 발생하면 DB에 부하가 간다.(에러는 서버에도 전파가 됨)
+
+        /// 방법2: 데이터 조회 후 없다면 예외 처리 -> delete 수행 (2step)
+        // - DB에서는 에러가 발생하지 않게 됨
+        Author author = authorRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Entity is not found"));
+
+        authorRepository.delete(id);
     }
 
 }

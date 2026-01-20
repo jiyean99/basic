@@ -4,10 +4,15 @@ import com.beyond.basic.b2_board.author.dto.AuthorCreateDto;
 import com.beyond.basic.b2_board.author.dto.AuthorDetailDto;
 import com.beyond.basic.b2_board.author.dto.AuthorListDto;
 import com.beyond.basic.b2_board.author.service.AuthorService;
+import com.beyond.basic.b2_board.common.dto.CommonErrorDto;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /*
  * =========================================================
@@ -17,10 +22,10 @@ import java.util.List;
  * [역할]
  * - Author 관련 HTTP 요청을 받아 Service에 위임하고, Service에서 반환한 DTO를 그대로 응답으로 내려준다.
  *
- * [@RestController]
+ * TODO [@RestController]
  * - @Controller + @ResponseBody 조합으로, 메서드 반환값을 뷰 이름이 아닌 HTTP 응답 바디(JSON/text)로 바로 내려준다.
  *
- * [@RequestMapping("/author")]
+ * TODO [@RequestMapping("/author")]
  * - "/author"로 시작하는 모든 요청의 공통 prefix를 담당한다.
  */
 @RestController
@@ -67,10 +72,24 @@ public class AuthorController {
      * - 요청 바디 JSON을 AuthorCreateDto로 바인딩 받고,
      *   Service에 저장을 위임한 뒤 단순 "OK" 문자열을 반환한다.
      */
+    // email 중복 시 에러발생 -> Illegal 400
     @PostMapping("/create")
-    public String create(@RequestBody AuthorCreateDto dto) {
+    // dto에 있는 validation 어노테이션과 Valid 한 쌍
+    public ResponseEntity<?> create(@RequestBody @Valid AuthorCreateDto dto) {
+        /// 아래 예외처리는 Exception Handler에서 전역적으로 예외처리하고있다.
+//        try {
+//            authorService.save(dto);
+//            return ResponseEntity.status(HttpStatus.CREATED).body("OK");
+//        } catch (IllegalArgumentException e) {
+//            e.printStackTrace();
+//            CommonErrorDto commonErrorDto = CommonErrorDto.builder()
+//                    .status_code(400)
+//                    .error_message(e.getMessage())
+//                    .build();
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commonErrorDto);
+//        }
         authorService.save(dto);
-        return "OK";
+        return ResponseEntity.status(HttpStatus.CREATED).body("OK");
     }
 
     /*
@@ -107,9 +126,39 @@ public class AuthorController {
      * [설명]
      * - PathVariable로 id를 받아 Service에서 조회한 AuthorDetailDto를 반환한다.
      */
+
+    // TODO [기존코드]
+    // 문제점 : http 응답 body를 분기처리한다고 하더라도, 상태코드는 200으로 고정되어있다.
+//    @GetMapping("/{id}")
+//    // AuthorDetailDto -> Object : 에러메시지를 return할 수 있도록 조상클래스인 Object로 변경
+//    // CommonErrorDto : body에 에러에 대한 내용을 전달
+//    public Object findById(@PathVariable Long id) {
+//        try {
+//            AuthorDetailDto dto = authorService.findById(id);
+//            return dto;
+//        } catch (NoSuchElementException e) {
+//            e.printStackTrace();
+//            return CommonErrorDto.builder()
+//                    .status_code(404)
+//                    .error_message(e.getMessage())
+//                    .build();
+//        }
+//    }
+
+    // [ResponseEntity]
     @GetMapping("/{id}")
-    public AuthorDetailDto findById(@PathVariable Long id) {
-        return authorService.findById(id);
+    public ResponseEntity<?> findById(@PathVariable Long id) {
+        try {
+            AuthorDetailDto dto = authorService.findById(id);
+            return ResponseEntity.status(HttpStatus.OK).body(dto);
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            CommonErrorDto dto = CommonErrorDto.builder()
+                    .status_code(404)
+                    .error_message(e.getMessage())
+                    .build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(dto);
+        }
     }
 
     /*
@@ -129,7 +178,7 @@ public class AuthorController {
      */
     @DeleteMapping("/{id}")
     public String delete(@PathVariable Long id) {
-        System.out.println("회원 삭제 완료 : " + id);
+        authorService.delete(id);
         return "OK";
     }
 }

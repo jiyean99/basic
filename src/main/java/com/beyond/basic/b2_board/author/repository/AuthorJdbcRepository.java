@@ -34,6 +34,33 @@ public class AuthorJdbcRepository {
         this.dataSource = dataSource;
     }
 
+    public Optional<Author> findByEmail(String inputEmail) {
+        Author author = null;
+        try {
+            Connection connection = dataSource.getConnection();
+            String sql = "select * from author where email = ?";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, inputEmail);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                Long id = resultSet.getLong("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String password = resultSet.getString("password");
+                author = Author.builder()
+                        .id(id)
+                        .name(name)
+                        .email(email)
+                        .password(password)
+                        .build();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return Optional.ofNullable(author);
+    }
+
     public void save(Author author) {
         try {
             Connection connection = dataSource.getConnection(); // checked 예외 발생 -> try-catch로 예외를 다시 던짐(롤백의 기준이 되기 위해서)
@@ -42,7 +69,7 @@ public class AuthorJdbcRepository {
             preparedStatement.setString(1, author.getName());
             preparedStatement.setString(2, author.getEmail());
             preparedStatement.setString(3, author.getPassword());
-            // executeUpdate() : 추가/수정
+            // executeUpdate() : 추가/수정/삭제
             // executeQuery() : 조회
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -103,5 +130,17 @@ public class AuthorJdbcRepository {
         }
 
         return Optional.ofNullable(author);
+    }
+
+    public void delete(Long id) {
+        try {
+            Connection connection = dataSource.getConnection();
+            String sql = "delete from author where id = ?";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setLong(1, id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace : 인터페이스와 레파지토리 매핑을 맞춰주는 구문 -->
+<mapper namespace="com.beyond.basic.b2_board.author.repository.AuthorMybatisRepository">
+    <!-- 태그 종류: insert, select 등 -->
+    <!-- id : 레파지토리에 매핑되어야할 메서드 이름 작성 -->
+    <!-- resultType : 출력값(조회 관련) -->
+    <!-- parameterType : 입력값 -->
+    <select id="findByEmail" parameterType="java.lang.String" resultType="com.beyond.basic.b2_board.author.domain.Author">
+        select * from author where email = #{email};
+    </select>
+
+    <insert id="save" parameterType="com.beyond.basic.b2_board.author.domain.Author">
+        insert into author(name, email, password) values(#{name}, #{email}, #{password});
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultType="com.beyond.basic.b2_board.author.domain.Author">
+        select * from author where id = #{id};
+    </select>
+
+    <select id="findAll" parameterType="com.beyond.basic.b2_board.author.dto.AuthorListDto" resultType="com.beyond.basic.b2_board.author.domain.Author">
+
+    </select>
+</mapper>
