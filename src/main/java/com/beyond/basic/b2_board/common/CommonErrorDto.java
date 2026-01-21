@@ -1,4 +1,4 @@
-package com.beyond.basic.b2_board.common.dto;
+package com.beyond.basic.b2_board.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
