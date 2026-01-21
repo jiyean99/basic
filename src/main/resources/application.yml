@@ -11,6 +11,26 @@ spring:
     url: jdbc:mariadb://localhost:3306/board
     username: root
     password: test1234
+  # [JPA(Hibernate) 환경설정]
+  # - database: 사용 DB 종류 지정(부트의 자동 구성에 참고됨)
+  # - database-platform: Hibernate 방언(Dialect) 지정
+  #   * Dialect는 DB 벤더/버전별 SQL 문법·함수·페이징·DDL 생성 차이를 Hibernate가 맞춰서 생성하도록 도와준다.
+  #   * 사용 DB에 맞는 Dialect를 지정해야 생성/실행되는 SQL 호환성이 좋아진다.
+  # - generate-ddl : CREATE, ALTER, DROP의 DDL 명령어(테이블 생성)를 jpa 기술로 자동생성 옵션 설정
+  # - hibernate : jpa(인터페이스의 명세)의 실질적인 구현체
+  #   - ddl-auto : DDL문 자동생성에 대한 모드 설정(crate, update, validate)
+  #       - create : 매 번 (서버 재시작마다) table을 전체 drop 후 재생성 (@Entity 기반으로 jpa에게 테이블 생성을 위임함) - 프로젝트 최초 구성시 활용
+  #       - update : 엔티티의 변경사항만 alter 적용. 기존 데이터 유지 - 개발서버 목적 (개발환경 서버운영 목적)
+  #       - validate : 실제 DB와의 차이점을 check만 하고 DDL문 실행 X(콘솔 내 변경사항 출력) - 운영서버 목적 (운영환경 서버운영 목적)
+  # - show_sql : 콘솔 내 DDL, DML 등의 쿼리를 출력하여 보여주는 옵션
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: create
+    show_sql: true
+
 # mapper 파일(mybatis의 실질 쿼리 파일)의 위치 명시
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml

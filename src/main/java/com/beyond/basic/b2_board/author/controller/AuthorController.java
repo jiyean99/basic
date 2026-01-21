@@ -1,8 +1,10 @@
 package com.beyond.basic.b2_board.author.controller;
 
+import com.beyond.basic.b2_board.author.domain.Author;
 import com.beyond.basic.b2_board.author.dto.AuthorCreateDto;
 import com.beyond.basic.b2_board.author.dto.AuthorDetailDto;
 import com.beyond.basic.b2_board.author.dto.AuthorListDto;
+import com.beyond.basic.b2_board.author.dto.AuthorUpdatePwDto;
 import com.beyond.basic.b2_board.author.service.AuthorService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,7 +166,7 @@ public class AuthorController {
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable Long id) {
 
-        /// [ResponseEntity + try-catch 방식 실습 코드] (학습 흔적 보존)
+        /// [ResponseEntity+try-catch 방식 실습 코드] (학습 흔적 보존)
 //        try {
 //            AuthorDetailDto dto = authorService.findById(id);
 //            return ResponseEntity.status(HttpStatus.OK).body(dto);
@@ -200,5 +202,25 @@ public class AuthorController {
     public String delete(@PathVariable Long id) {
         authorService.delete(id);
         return "OK";
+    }
+
+    /*
+     * =========================================================
+     * 5. 비밀번호 수정(Password Patch)
+     * =========================================================
+     *
+     * [URL]
+     * - PATCH /author/passwordPatch
+     *
+     * [설명]
+     * - PathVariable로 id를 받아 Service에서 조회한 AuthorDetailDto를 반환한다.
+     * -
+     * - AuthorUpdatePwDto : 쿼리파라미터로 email를 받아 Service에서 email로 객체 조회 후 password 변경한다.
+     * - Repository에서는 save로 처리하면 update가 된다.
+     */
+    @PatchMapping("/updatePassword")
+    public ResponseEntity<?> updatePassword(@RequestBody AuthorUpdatePwDto dto) {
+        Author author = authorService.updatePassword(dto);
+        return ResponseEntity.status(HttpStatus.OK).body(author);
     }
 }

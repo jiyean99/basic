@@ -39,6 +39,7 @@ repositories {
 //     - JPA(Spring Data JPA)
 // - spring-boot-starter-data-jdbc : jdbc 의존성
 // - mybatis-spring-boot-starter : MyBatis 의존성
+// - spring-boot-starter-data-jpa : jpa 의존성
 // - validation : 값 검증을 위한 의존성
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -50,6 +51,7 @@ dependencies {
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
 

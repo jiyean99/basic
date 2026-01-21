@@ -4,11 +4,11 @@ import com.beyond.basic.b2_board.author.domain.Author;
 import com.beyond.basic.b2_board.author.dto.AuthorCreateDto;
 import com.beyond.basic.b2_board.author.dto.AuthorDetailDto;
 import com.beyond.basic.b2_board.author.dto.AuthorListDto;
-import com.beyond.basic.b2_board.author.repository.AuthorJdbcRepository;
-import com.beyond.basic.b2_board.author.repository.AuthorMemoryRepository;
-import com.beyond.basic.b2_board.author.repository.AuthorMybatisRepository;
+import com.beyond.basic.b2_board.author.dto.AuthorUpdatePwDto;
+import com.beyond.basic.b2_board.author.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -26,6 +26,14 @@ import java.util.stream.Collectors;
  *
  * [@Service]
  * - @Service는 컴포넌트 스캔 대상이며, 기본 스코프는 singleton이라 스프링 컨텍스트에서 1개의 인스턴스로 생성/관리된다.
+ *
+ * [@Transactional]
+ * - 스프링에서 jpa를 활용할 때 트랜잭션 처리(commit, rollback)지원
+ * - commit의 기준점 : 메서드 정상 종료 시점
+ * - rollback의 기준점 : 예외 발생했을 경우
+ * - 트랜잭션 처리가 필요없는 조회 메서드의 경우 성능향상을 위해 readOnly처리 필요
+ *   조회는 커밋을 수행하지 않기 때문에 트랜잭션 처리가 불필요하다. 따라서 트랜잭션처리가 수행될 경우 성능이 저하되는 것
+ *
  *
  * =========================================================
  * [실습 워크플로우]
@@ -50,6 +58,8 @@ import java.util.stream.Collectors;
  *  - 중복 체크: findByEmail().isPresent() -> IllegalArgumentException
  *  - 존재 체크: findById().orElseThrow() -> NoSuchElementException
  *  - 발생한 예외는 상위 계층(Controller)로 전파되고, 전역 예외 핸들러에서 공통 처리 가능
+ *
+ * (E) JPA 활용 시 트랜잭션 로직 추가
  *
  * =========================================================
  * TODO [DI(의존성 주입) 방법]
@@ -86,6 +96,7 @@ import java.util.stream.Collectors;
 @Service
 // DI(의존성) 주입 방법 - 3. RequiredArgsConstructor 어노테이션 사용
 //@RequiredArgsConstructor
+@Transactional
 public class AuthorService {
 
     /*
@@ -135,10 +146,16 @@ public class AuthorService {
 //    private final AuthorJdbcRepository authorRepository;
 
     // TODO [mybatis 연결 레파지토리 사용 예시]
-    private final AuthorMybatisRepository authorRepository;
+//    private final AuthorMybatisRepository authorRepository;
+
+    // TODO [jpa 연결 레파지토리 사용 예시]
+//    private final AuthorJpaRepository authorRepository;
+
+    // TODO [spring data jpa 연결 레파지토리 사용 예시]
+    private final AuthorRepository authorRepository;
 
     @Autowired
-    public AuthorService(AuthorMybatisRepository authorRepository) {
+    public AuthorService(AuthorRepository authorRepository) {
         // 해당 생성자를 주입받겠다는 의미로 해당 어노테이션 추가(생성자가 하나밖에 없을 때에는 생략 가능)
         this.authorRepository = authorRepository;
     }
@@ -209,8 +226,12 @@ public class AuthorService {
         }
 
         authorRepository.save(author);
+
+        // 예외 발생 시 @Transactional 어노테이션에 의해 rollback 처리
+        // authorRepository.findById(10L).orElseThrow(() -> new NoSuchElementException("롤백 테스트를 위한 코드입니다."));
     }
 
+    @Transactional(readOnly = true)
     public List<AuthorListDto> findAll() {
         /*
          * [findAll 워크플로우]
@@ -245,6 +266,7 @@ public class AuthorService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public AuthorDetailDto findById(Long id) {
         /*
          * [findById 워크플로우]
@@ -296,8 +318,30 @@ public class AuthorService {
         /// 방법2: 데이터 조회 후 없다면 예외 처리 -> delete 수행 (2step)
         // - DB에서는 에러가 발생하지 않게 됨
         // - 존재하지 않는 id 삭제 요청을 명확하게 예외로 처리하기 위함
-        authorRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Entity is not found"));
+        Author author = authorRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Entity is not found"));
 
-        authorRepository.delete(id);
+        // [기존] - id값으로 삭제작업 수행
+//        authorRepository.delete(id);
+        // [변경] - JPA의 경우 객체지향이므로 author 객체를 주입시켜서 삭제 수행
+        authorRepository.delete(author);
+    }
+
+    public Author updatePassword(AuthorUpdatePwDto dto) {
+        Author author = authorRepository.findByEmail(dto.getEmail()).orElseThrow(()-> new NoSuchElementException("해당 메일로 가입된 계정이 없습니다."));
+        author.updatePassword(dto.getPassword());
+
+        // insert, update 모두 save 메서드 사용 -> 변경감지로 대체
+//        return authorRepository.save(author);
+        /*
+        * [영속성 컨텍스트]
+        * - 애플리케이션과 DB 사이에서 객체를 보관하는 가상의 DB 역할
+        *
+        * [주요 기능]
+        * (1) 쓰기 지연: insert, update 등의 작업사항을 즉시 실행하지 않고, 커밋 시점에 모아서 실행(성능향상)
+        * (2) 변경 감지(dirty checking) : 영속상태/관리상태(managed)의 엔티티는 트랜잭션 커밋 시점에 변경감지를 통해 별도의 save 없이 DB에 반영
+        *       * 관리상태가 되려면 조회를 해야함
+        *       * 결국 update는 save하지 않아도 되게 됨
+        * */
+        return author;
     }
 }
