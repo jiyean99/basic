@@ -27,6 +27,14 @@ import java.util.NoSuchElementException;
  *
  * TODO [@RequestMapping("/author")]
  * - "/author"로 시작하는 모든 요청의 공통 prefix를 담당한다.
+ *
+ * =========================================================
+ * [실습 워크플로우 변화]
+ * =========================================================
+ *
+ * (기존) Controller에서 try-catch로 예외를 잡고 CommonErrorDto를 직접 생성해서 리턴
+ * (개선) Controller는 정상 흐름만 담당하고,
+ *       예외는 전역 예외 핸들러(@RestControllerAdvice)에서 공통 처리한다. [web:52][web:45]
  */
 @RestController
 @RequestMapping("/author")
@@ -77,6 +85,8 @@ public class AuthorController {
     // dto에 있는 validation 어노테이션과 Valid 한 쌍
     public ResponseEntity<?> create(@RequestBody @Valid AuthorCreateDto dto) {
         /// 아래 예외처리는 Exception Handler에서 전역적으로 예외처리하고있다.
+        /// (기존 try-catch 예외처리 실습 코드는 "학습 흔적"으로 주석 보존)
+        /// - 전역 예외 핸들러 도입 후에는 Controller가 try-catch를 가질 필요가 없음
 //        try {
 //            authorService.save(dto);
 //            return ResponseEntity.status(HttpStatus.CREATED).body("OK");
@@ -88,6 +98,7 @@ public class AuthorController {
 //                    .build();
 //            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commonErrorDto);
 //        }
+
         authorService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body("OK");
     }
@@ -145,20 +156,31 @@ public class AuthorController {
 //        }
 //    }
 
-    // [ResponseEntity]
+    /*
+     * =========================================================
+     * [개선 포인트]
+     * - Controller에서 try-catch로 ResponseEntity 분기하던 작업을
+     *   전역 예외 핸들러로 이동(@RestControllerAdvice) [web:52][web:45]
+     * - Controller는 성공 응답(200)만 내려주고, 실패 응답은 Advice에서 내려준다.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable Long id) {
-        try {
-            AuthorDetailDto dto = authorService.findById(id);
-            return ResponseEntity.status(HttpStatus.OK).body(dto);
-        } catch (NoSuchElementException e) {
-            e.printStackTrace();
-            CommonErrorDto dto = CommonErrorDto.builder()
-                    .status_code(404)
-                    .error_message(e.getMessage())
-                    .build();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(dto);
-        }
+
+        /// [ResponseEntity + try-catch 방식 실습 코드] (학습 흔적 보존)
+//        try {
+//            AuthorDetailDto dto = authorService.findById(id);
+//            return ResponseEntity.status(HttpStatus.OK).body(dto);
+//        } catch (NoSuchElementException e) {
+//            e.printStackTrace();
+//            CommonErrorDto dto = CommonErrorDto.builder()
+//                    .status_code(404)
+//                    .error_message(e.getMessage())
+//                    .build();
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(dto);
+//        }
+
+        AuthorDetailDto dto = authorService.findById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(dto);
     }
 
     /*
