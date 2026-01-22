@@ -6,6 +6,8 @@ import com.beyond.basic.b2_board.author.dto.AuthorDetailDto;
 import com.beyond.basic.b2_board.author.dto.AuthorListDto;
 import com.beyond.basic.b2_board.author.dto.AuthorUpdatePwDto;
 import com.beyond.basic.b2_board.author.repository.*;
+import com.beyond.basic.b2_board.post.domain.Post;
+import com.beyond.basic.b2_board.post.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -153,11 +155,13 @@ public class AuthorService {
 
     // TODO [spring data jpa 연결 레파지토리 사용 예시]
     private final AuthorRepository authorRepository;
+    private final PostRepository postRepository;
 
     @Autowired
-    public AuthorService(AuthorRepository authorRepository) {
+    public AuthorService(AuthorRepository authorRepository, PostRepository postRepository) {
         // 해당 생성자를 주입받겠다는 의미로 해당 어노테이션 추가(생성자가 하나밖에 없을 때에는 생략 가능)
         this.authorRepository = authorRepository;
+        this.postRepository = postRepository;
     }
 
     /*
@@ -167,6 +171,7 @@ public class AuthorService {
      * - 아래처럼 @RequiredArgsConstructor를 켜면, final 필드 대상으로 생성자가 자동 생성됨
      * - 다형성 설계를 하려면 "필드 타입을 interface"로 두면 된다.
      */
+
     /// DI(의존성) 주입 방법 - 3. RequiredArgsConstructor 어노테이션 사용
     // private final AuthorMemoryRepository authorRepository;
 
@@ -195,7 +200,6 @@ public class AuthorService {
      * findById: 단건 조회(Optional) -> 없으면 예외 -> dto 변환
      * delete: 단건 조회(Optional) -> 없으면 예외 -> 삭제
      */
-
     public void save(AuthorCreateDto dto) {
         /*
          * [save 워크플로우]
@@ -220,12 +224,19 @@ public class AuthorService {
         /// 예외처리 로직 추가
         /// - 기존 코드에서 dto.toEntity()를 2번 호출하던 부분은, 워크플로우 파악을 위해 한 번만 조립하도록 개선
         Author author = dto.toEntity();
-
-        if (authorRepository.findByEmail(author.getEmail()).isPresent()) {
+        if (authorRepository.findAllByEmail(author.getEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
-        authorRepository.save(author);
+        // [CascadeType.PERSIST 옵션 예시를 위한 코드]
+        Author authorDB = authorRepository.save(author);
+        author.getPostList().add(Post.builder().title("안녕하세요").author(authorDB).build()); // 이 때 반드시 List를 초기화해줘야함
+
+        // [Cascade 옵션이 적용되지 않은 예시를 위한 코드]
+        // authorDB -> 쓰기지연이 발생하여서 영속성 컨텍스트에 모아놓고 쿼리를 짜주니 저장되기 전임에도 해당 객체를 사용할 수 있게 됨
+
+        // Author authorDB = authorRepository.save(author);
+        // postRepository.save(Post.builder().title("안녕하세요").author(authorDB).build());
 
         // 예외 발생 시 @Transactional 어노테이션에 의해 rollback 처리
         // authorRepository.findById(10L).orElseThrow(() -> new NoSuchElementException("롤백 테스트를 위한 코드입니다."));
@@ -300,6 +311,24 @@ public class AuthorService {
 
         /// 2. fromEntity로 조립
         // fromEntity는 아직 DTO객체가 만들어지지 않은 상태이므로, static 메서드로 설계
+
+        // =========================================================
+        // [기존 방식] postCount를 Service에서 계산해서 DTO로 전달
+        // - 글 개수를 구하기 위해 Post 목록을 직접 조회
+        // - delYn = "NO" 조건으로 soft delete 글 제외 가능
+        // - 단점: 개수만 필요한데 List<Post>를 통째로 조회할 수 있어 비효율 가능
+        // =========================================================
+        // [기존코드]
+        // List<Post> postList = postRepository.findAllByAuthorIdAndDelYn(author.getId(), "NO");
+        // return AuthorDetailDto.fromEntity(author, 0);
+
+        // =========================================================
+        // [변경 방식] postCount 계산을 DTO 내부로 이동
+        // - Service는 author만 조회하고 DTO 변환만 수행(로직 단순화)
+        // - 단점: author.getPostList().size() 호출 시 LAZY 로딩이면 추가 쿼리 발생 가능
+        // - 단점: 현재 구현은 soft delete(delYn="YES")까지 포함될 수 있음(정확한 "미삭제 글 수"와 다를 수 있음)
+        // =========================================================
+        // [변경코드]
         return AuthorDetailDto.fromEntity(author);
     }
 
@@ -327,21 +356,21 @@ public class AuthorService {
     }
 
     public Author updatePassword(AuthorUpdatePwDto dto) {
-        Author author = authorRepository.findByEmail(dto.getEmail()).orElseThrow(()-> new NoSuchElementException("해당 메일로 가입된 계정이 없습니다."));
+        Author author = authorRepository.findAllByEmail(dto.getEmail()).orElseThrow(() -> new NoSuchElementException("해당 메일로 가입된 계정이 없습니다."));
         author.updatePassword(dto.getPassword());
 
         // insert, update 모두 save 메서드 사용 -> 변경감지로 대체
 //        return authorRepository.save(author);
         /*
-        * [영속성 컨텍스트]
-        * - 애플리케이션과 DB 사이에서 객체를 보관하는 가상의 DB 역할
-        *
-        * [주요 기능]
-        * (1) 쓰기 지연: insert, update 등의 작업사항을 즉시 실행하지 않고, 커밋 시점에 모아서 실행(성능향상)
-        * (2) 변경 감지(dirty checking) : 영속상태/관리상태(managed)의 엔티티는 트랜잭션 커밋 시점에 변경감지를 통해 별도의 save 없이 DB에 반영
-        *       * 관리상태가 되려면 조회를 해야함
-        *       * 결국 update는 save하지 않아도 되게 됨
-        * */
+         * [영속성 컨텍스트]
+         * - 애플리케이션과 DB 사이에서 객체를 보관하는 가상의 DB 역할
+         *
+         * [주요 기능]
+         * (1) 쓰기 지연: insert, update 등의 작업사항을 즉시 실행하지 않고, 커밋 시점에 모아서 실행(성능향상)
+         * (2) 변경 감지(dirty checking) : 영속상태/관리상태(managed)의 엔티티는 트랜잭션 커밋 시점에 변경감지를 통해 별도의 save 없이 DB에 반영
+         *       * 관리상태가 되려면 조회를 해야함
+         *       * 결국 update는 save하지 않아도 되게 됨
+         * */
         return author;
     }
 }

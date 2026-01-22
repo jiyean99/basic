@@ -25,13 +25,22 @@ public class PostCreateDto {
     private String authorEmail;
     private String delYn;
 
-    public Post toEntity() {
+    public Post toEntity(Author authorByEmail) {
+        // TODO [설계변경 1 : authorEmail -> authorId]
+        /*
         return Post.builder()
                 .title(this.title)
                 .contents(this.contents)
                 .category(this.category)
-                .authorEmail(this.authorEmail)
-                .delYn("NO")
+                .authorId(authorByEmail.getId())
+                .build();
+        */
+        // TODO [설계변경 1 : authorId -> authorByEmail 객체]
+        return Post.builder()
+                .title(this.title)
+                .contents(this.contents)
+                .category(this.category)
+                .author(authorByEmail)
                 .build();
     }
 }

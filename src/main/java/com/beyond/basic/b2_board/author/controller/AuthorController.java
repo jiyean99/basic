@@ -166,7 +166,7 @@ public class AuthorController {
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable Long id) {
 
-        /// [ResponseEntity+try-catch 방식 실습 코드] (학습 흔적 보존)
+        // [ResponseEntity+try-catch 방식 실습 코드]
 //        try {
 //            AuthorDetailDto dto = authorService.findById(id);
 //            return ResponseEntity.status(HttpStatus.OK).body(dto);

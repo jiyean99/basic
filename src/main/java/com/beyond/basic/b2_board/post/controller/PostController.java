@@ -1,17 +1,15 @@
 package com.beyond.basic.b2_board.post.controller;
 
-import com.beyond.basic.b2_board.post.domain.Post;
 import com.beyond.basic.b2_board.post.dto.PostCreateDto;
-import com.beyond.basic.b2_board.post.dto.PostDeleteDto;
 import com.beyond.basic.b2_board.post.dto.PostDetailDto;
 import com.beyond.basic.b2_board.post.dto.PostListDto;
 import com.beyond.basic.b2_board.post.service.PostService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 
 @RestController
@@ -27,7 +25,8 @@ public class PostController {
     //-title, contents, category, authorEmail
     //-authorEmail 존재 유효성 체크 => authorRepository 주입 및 findByEmail 호출
     @PostMapping("/post/create")
-    public void create(@RequestBody @Valid PostCreateDto dto) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public void postCreate(@RequestBody @Valid PostCreateDto dto) {
         postService.save(dto);
     }
 
@@ -35,14 +34,14 @@ public class PostController {
     //-id, title, category, authorEmail
     //-삭제된 데이터 조회 제외 => List<Post> findByDelYn(String delYn)
     @GetMapping("/posts")
-    public List<PostListDto> findAll() {
+    public List<PostListDto> postListDto() {
         return postService.findAll();
     }
 
     // 3.게시글상세조회(/post/1)
     //-id, title, category, contents, authorEmail
     @GetMapping("/post/{id}")
-    public PostDetailDto findById(@PathVariable Long id) {
+    public PostDetailDto postDetailDto(@PathVariable Long id) {
         return postService.findById(id);
     }
 
