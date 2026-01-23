@@ -1,14 +1,12 @@
 package com.beyond.basic.b2_board.author.service;
 
 import com.beyond.basic.b2_board.author.domain.Author;
-import com.beyond.basic.b2_board.author.dto.AuthorCreateDto;
-import com.beyond.basic.b2_board.author.dto.AuthorDetailDto;
-import com.beyond.basic.b2_board.author.dto.AuthorListDto;
-import com.beyond.basic.b2_board.author.dto.AuthorUpdatePwDto;
+import com.beyond.basic.b2_board.author.dto.*;
 import com.beyond.basic.b2_board.author.repository.*;
 import com.beyond.basic.b2_board.post.domain.Post;
 import com.beyond.basic.b2_board.post.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -156,12 +154,14 @@ public class AuthorService {
     // TODO [spring data jpa 연결 레파지토리 사용 예시]
     private final AuthorRepository authorRepository;
     private final PostRepository postRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AuthorService(AuthorRepository authorRepository, PostRepository postRepository) {
+    public AuthorService(AuthorRepository authorRepository, PostRepository postRepository, PasswordEncoder passwordEncoder) {
         // 해당 생성자를 주입받겠다는 의미로 해당 어노테이션 추가(생성자가 하나밖에 없을 때에는 생략 가능)
         this.authorRepository = authorRepository;
         this.postRepository = postRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /*
@@ -223,14 +223,16 @@ public class AuthorService {
 
         /// 예외처리 로직 추가
         /// - 기존 코드에서 dto.toEntity()를 2번 호출하던 부분은, 워크플로우 파악을 위해 한 번만 조립하도록 개선
-        Author author = dto.toEntity();
+
+        // TODO 암호화하지 않은 dto에 들어오고 이를 암호화 해서 author 객체로 만들어줘야함
+        Author author = dto.toEntity(passwordEncoder.encode(dto.getPassword()));
         if (authorRepository.findAllByEmail(author.getEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
         // [CascadeType.PERSIST 옵션 예시를 위한 코드]
-        Author authorDB = authorRepository.save(author);
-        author.getPostList().add(Post.builder().title("안녕하세요").author(authorDB).build()); // 이 때 반드시 List를 초기화해줘야함
+        author.getPostList().add(Post.builder().title("안녕하세요").author(author).build()); // 이 때 반드시 List를 초기화해줘야함
+        authorRepository.save(author);
 
         // [Cascade 옵션이 적용되지 않은 예시를 위한 코드]
         // authorDB -> 쓰기지연이 발생하여서 영속성 컨텍스트에 모아놓고 쿼리를 짜주니 저장되기 전임에도 해당 객체를 사용할 수 있게 됨
@@ -240,6 +242,35 @@ public class AuthorService {
 
         // 예외 발생 시 @Transactional 어노테이션에 의해 rollback 처리
         // authorRepository.findById(10L).orElseThrow(() -> new NoSuchElementException("롤백 테스트를 위한 코드입니다."));
+    }
+
+    public Author login(AuthorLoginDto dto) {
+        // 아래 구조의 보안 취약점 : 이메일이 잘못되었는지, 비밀번호가 잘못되었는지 알려주는것은 특정 데이터가 맞았다 라고 알 수 있기 때문에 특정해서 알려주면 안됨
+        /*
+        Author author = authorRepository.findAllByEmail(dto.getEmail()).orElseThrow(() -> new IllegalArgumentException("일치하는 이메일이 없습니다."));
+        if (!passwordEncoder.matches(dto.getPassword(), author.get().getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+        return author;
+        */
+
+        Optional<Author> optionalAuthor = authorRepository.findAllByEmail(dto.getEmail());
+
+        boolean check = true;
+
+        if (!optionalAuthor.isPresent()) {
+            check = false;
+        } else {
+            if (!passwordEncoder.matches(dto.getPassword(), optionalAuthor.get().getPassword())) {
+                check = false;
+            }
+        }
+
+        if (!check) {
+            throw new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다.");
+        }
+
+        return optionalAuthor.get();
     }
 
     @Transactional(readOnly = true)

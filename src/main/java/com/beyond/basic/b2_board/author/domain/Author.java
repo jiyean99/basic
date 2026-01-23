@@ -1,6 +1,6 @@
 package com.beyond.basic.b2_board.author.domain;
 
-import com.beyond.basic.b2_board.common.BaseTimeEntity;
+import com.beyond.basic.b2_board.common.domain.BaseTimeEntity;
 import com.beyond.basic.b2_board.post.domain.Post;
 import jakarta.persistence.*;
 import lombok.*;

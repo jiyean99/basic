@@ -1,14 +1,9 @@
 package com.beyond.basic.b2_board.post.domain;
 
 import com.beyond.basic.b2_board.author.domain.Author;
-import com.beyond.basic.b2_board.common.BaseTimeEntity;
+import com.beyond.basic.b2_board.common.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
 @AllArgsConstructor
@@ -92,6 +87,7 @@ public class Post extends BaseTimeEntity {
      * - 이 매핑을 걸면 Post 테이블에 FK 컬럼이 만들어짐(기본 추론 시 보통 author_id)
      * - fetch FetchType.LAZY vs FetchType.EAGER(디폴트)
      *      - FetchType.LAZY(지연로딩) : 사용하지 않는 불필요한 로딩을 하지 않는 옵션, 서버 부하 감소
+     *      - FetchType.EAGER(즉시로딩) : 사용하지 않는 불필요한 로딩을 하지 않는 옵션, 서버 부하 감소
      * - 실무에서는 N+1, 불필요한 즉시로딩 방지를 위해 fetch = LAZY를 명시하는 경우가 많음
      *   예) @ManyToOne(fetch = FetchType.LAZY)
      *

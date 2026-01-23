@@ -41,6 +41,11 @@ repositories {
 // - mybatis-spring-boot-starter : MyBatis 의존성
 // - spring-boot-starter-data-jpa : jpa 의존성
 // - validation : 값 검증을 위한 의존성
+// - spring-boot-starter-security : 로그인을 위한 security 의존성
+//   * 의존성 적용 시 모든 api 요청에 대해 로그인을 요구한다
+//     - 로그인 요구란 프로젝트 전역에서 Authentication 객체(인증 객체)의 생성 여부를 확인하는 것
+// - jjwt-api, jjwt-impl : jwt토큰 관련 라이브러리 추가
+// - jjwt-jackson : 토큰의 JSON 인코딩/디코딩, 직렬화/파싱 시 필요
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -53,6 +58,13 @@ dependencies {
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+//	로그인을 위한 security 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+//	jwt토큰 관련 라이브러리 추가
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+// 	토큰의 JSON 직렬화/역직렬화에 필요
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 }
 
 tasks.named('test') {

@@ -34,3 +34,9 @@ spring:
 # mapper 파일(mybatis의 실질 쿼리 파일)의 위치 명시
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml
+
+# 실제 프로젝트의 경우 운영목적의 경우는 아예 secret key에 대한 설정을
+jwt:
+  #  인코딩된 문자 32자 이상 필요.(특수문자) : base64 encoder
+  #  beyondaccesstokensecretkeybeyondaccesstokensecretkeybeyondaccesstokensecretkey
+  secretKey: YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5

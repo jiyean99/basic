@@ -22,11 +22,11 @@ public class AuthorCreateDto {
     @Size(min = 8, message = "비밀번호의 길이가 짧습니다. 8자 이상 입력하시오.")
     private String password;
 
-    public Author toEntity() {
+    public Author toEntity(String encodedPassword) {
         return Author.builder()
                 .name(this.name)
                 .email(this.email)
-                .password(this.password)
+                .password(encodedPassword)
                 .build();
     }
 }
