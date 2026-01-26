@@ -21,8 +21,8 @@ public class PostCreateDto {
     private String contents;
     @NotBlank(message = "카테고리를 작성하시오.")
     private String category;
-    @NotBlank(message = "작성자 이메일을 작성하시오.")
-    private String authorEmail;
+//    @NotBlank(message = "작성자 이메일을 작성하시오.")
+//    private String authorEmail;
     private String delYn;
 
     public Post toEntity(Author authorByEmail) {

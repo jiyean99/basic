@@ -23,6 +23,9 @@ public class JwtTokenProvider {
     // - 인코딩 된 32글자 이상의 긴 문자열 -> 디코딩 -> 암호화
     private String st_secret_key;
 
+    @Value("${jwt.expiration}")
+    private int exp_minuet;
+
     // 인코딩된 문자열 st_secret_key를 디코딩 + 암호화(HS512 알고리즘 사용) 하여 secret_key에 넣어주어야함.
     private Key secret_key;
 
@@ -48,7 +51,7 @@ public class JwtTokenProvider {
                 // 아래 세가지 요소는 payload의 구성이다.
                 .setClaims(claims) //sub : 주된 정보
                 .setIssuedAt(now) //iat : 발급 시간
-                .setExpiration(new Date(now.getTime() + 30 * 60 * 1000L)) //exp : 만료일시(발급시간 기준) -> 30분을 밀리초 형태로 변환(30분 * 60초 * 1000밀리초)
+                .setExpiration(new Date(now.getTime() + exp_minuet * 60 * 1000L)) //exp : 만료일시(발급시간 기준) -> 30분을 밀리초 형태로 변환(30분 * 60초 * 1000밀리초)
                 // secret key를 통해 서명값(signature) 생성
                 .signWith(secret_key)
                 .compact();

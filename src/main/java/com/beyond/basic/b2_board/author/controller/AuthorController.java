@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.List;
  * - @Controller + @ResponseBody 조합으로, 메서드 반환값을 뷰 이름이 아닌 HTTP 응답 바디(JSON/text)로 바로 내려준다.
  *
  * TODO [@RequestMapping("/author")]
- * - "/author"로 시작하는 모든 요청의 공통 prefix를 담당한다.
+ * - "/author" prefix 담당(이 컨트롤러의 모든 API 공통 경로)
  *
  * =========================================================
  * [실습 워크플로우 변화]
@@ -70,15 +71,9 @@ public class AuthorController {
      * 1. 회원가입(Create)
      * =========================================================
      *
-     * [URL]
-     * - POST /author/create
-     *
-     * [요청 데이터 형식(JSON)]
-     * - {"name": "lee", "email": "lee@naver.com", "password": "1234"}
-     *
-     * [설명]
-     * - 요청 바디 JSON을 AuthorCreateDto로 바인딩 받고,
-     *   Service에 저장을 위임한 뒤 단순 "OK" 문자열을 반환한다.
+     * [URL] POST /author/create
+     * [요청] {"name": "lee", "email": "lee@naver.com", "password": "1234"}
+     * [설명] AuthorCreateDto로 바인딩 → Service 저장 위임 → "OK" 반환
      */
     // email 중복 시 에러발생 -> Illegal 400
     @PostMapping("/create")
@@ -104,7 +99,7 @@ public class AuthorController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthorLoginDto dto){
+    public ResponseEntity<?> login(@RequestBody AuthorLoginDto dto) {
         Author author = authorService.login(dto);
         // 토큰 생성 및 return
         String token = jwtTokenProvider.createToken(author);
@@ -117,17 +112,15 @@ public class AuthorController {
      * 2. 회원 목록 조회(Read - List)
      * =========================================================
      *
-     * [URL]
-     * - GET /author/list
-     *
-     * [응답 데이터 형식(JSON 배열)]
-     * - [{"id":1,"name":"lee","email":"lee@naver.com"}, ...]
-     *
-     * [설명]
-     * - Service에서 AuthorListDto 리스트를 받아 그대로 반환한다.
-     * - 목록 응답이므로 비밀번호 등 민감정보는 포함하지 않는 DTO를 사용한다.
+     * [URL] GET /author/list
+     * [응답] [{"id":1,"name":"lee","email":"lee@naver.com"}, ...]
+     * [설명] Service에서 목록 DTO를 받아 그대로 반환(민감정보 제외)
      */
     @GetMapping("/list")
+    // [@PreAuthorize] : Authentication 객체 안의 권한정보를 확인하는 어노테이션, 이 때 예외는 filter계층에서 확인하므로 filter계층에서 인가에러가 발생하는 것
+    // 두 개 이상의 Role을 허용하는 경우:
+    // ex) @PreAuthorize("hasRole('ADMIN') or hasRole('SELLER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<AuthorListDto> findAll() {
         return authorService.findAll();
     }
@@ -137,14 +130,8 @@ public class AuthorController {
      * 3. 회원 상세 조회(Read - Detail)
      * =========================================================
      *
-     * [URL]
-     * - GET /author/{id}
-     *
-     * [예시]
-     * - GET /author/1
-     *
-     * [설명]
-     * - PathVariable로 id를 받아 Service에서 조회한 AuthorDetailDto를 반환한다.
+     * [URL] GET /author/{id} (ex: /author/1)
+     * [설명] PathVariable id로 조회 → AuthorDetailDto 반환
      */
 
     // TODO [기존코드]
@@ -197,15 +184,8 @@ public class AuthorController {
      * 4. 회원 탈퇴(Delete)
      * =========================================================
      *
-     * [URL]
-     * - DELETE /author/{id}
-     *
-     * [예시]
-     * - DELETE /author/1
-     *
-     * [설명]
-     * - 현재는 단순히 id를 로그로 출력하고 "OK"만 반환하는 형태로,
-     *   실제 삭제 로직은 추후 Service/Repository 계층에 구현 예정이다.
+     * [URL] DELETE /author/{id} (ex: /author/1)
+     * [설명] Service에 삭제 위임 후 "OK" 반환
      */
     @DeleteMapping("/{id}")
     public String delete(@PathVariable Long id) {
@@ -218,8 +198,7 @@ public class AuthorController {
      * 5. 비밀번호 수정(Password Patch)
      * =========================================================
      *
-     * [URL]
-     * - PATCH /author/passwordPatch
+     * [URL] PATCH /author/passwordPatch
      *
      * [설명]
      * - PathVariable로 id를 받아 Service에서 조회한 AuthorDetailDto를 반환한다.
