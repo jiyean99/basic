@@ -9,6 +9,7 @@ import com.beyond.basic.b2_board.post.dto.PostListDto;
 import com.beyond.basic.b2_board.post.repository.PostRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,14 @@ public class PostService {
     }
 
     public void save(PostCreateDto dto) {
-        Author authorByEmail = authorRepository.findAllByEmail(dto.getAuthorEmail()).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
+        //[기존] : email을 DTO 구조로 설계
+        //Author authorByEmail = authorRepository.findAllByEmail(dto.getAuthorEmail()).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
+
+        //[개선] : 이미 filter를 타고온 이후이기 때문에 Authentication 객체 안에서 꺼내오는 구조로 개선
+        // - getPrincipal : email로 세팅한 principal을 꺼내는 작업(Object 설계였어서 toString화 필요)
+        String email = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        System.out.println("email === " + email);
+        Author authorByEmail = authorRepository.findAllByEmail(email).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
 
         postRepository.save(dto.toEntity(authorByEmail));
     }
@@ -41,7 +49,7 @@ public class PostService {
         List<Post> postList = postRepository.findAllByDelYn("NO");
         List<PostListDto> postListDtoList = new ArrayList<>();
 
-        for (Post p : postList){
+        for (Post p : postList) {
             // [변경1]
             //Author authorByPostId = authorRepository.findById(p.getAuthorId()).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
             //PostListDto dto = PostListDto.fromEntity(p, authorByPostId);
