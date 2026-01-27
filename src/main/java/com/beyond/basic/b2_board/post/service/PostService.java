@@ -9,6 +9,8 @@ import com.beyond.basic.b2_board.post.dto.PostListDto;
 import com.beyond.basic.b2_board.post.repository.PostRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,11 +45,13 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostListDto> findAll() {
+    public Page<PostListDto> findAll(Pageable pageable) {
 //        List<Post> postList = postRepository.findAllByDelYn("NO");
-        List<Post> postList = postRepository.findAllInnerJoin();
-        List<PostListDto> postListDtoList = new ArrayList<>();
+//        List<Post> postList = postRepository.findAllInnerJoin();
 
+        /*
+        List<Post> postList = postRepository.findAll(pageable);
+        List<PostListDto> postListDtoList = new ArrayList<>();
         for (Post p : postList) {
             // [변경1]
             //Author authorByPostId = authorRepository.findById(p.getAuthorId()).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
@@ -56,8 +60,14 @@ public class PostService {
             PostListDto dto = PostListDto.fromEntity(p);
             postListDtoList.add(dto);
         }
-
         return postListDtoList;
+        */
+
+        // Page 사용으로 인한 구조 변경
+        Page<Post> postList = postRepository.findAll(pageable);
+
+        // Page 객체 안에 Entity->DTO로 쉽게 변환할 수 있는 편의 제공
+        return postList.map(post -> PostListDto.fromEntity(post));
     }
 
 
