@@ -3,6 +3,9 @@
 server:
   port : 8081
 spring:
+  config:
+    activate:
+      on-profile: local
   # jdbc의 기본 DB 연결 설정. jdbc 뿐만 아니라 mybatis, jpa 등 spring의 대부분의 DB 관리 기술에서 사용.
   # 반드시 스키마가 사전에 생성되어있어야함
   # 테이블의 경우 jdbc/myBatis는 사전 생성 필요(jpa의 경우 자동생성해줌)
@@ -41,3 +44,8 @@ jwt:
   #  beyondaccesstokensecretkeybeyondaccesstokensecretkeybeyondaccesstokensecretkey
   secretKey: YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5
   expiration: 30
+
+# logback의 로그 레벨 : trace < debug < info < error 순서
+logging:
+  level:
+    root: debug

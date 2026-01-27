@@ -2,6 +2,8 @@ package com.beyond.basic.b2_board.post.repository;
 
 import com.beyond.basic.b2_board.author.domain.Author;
 import com.beyond.basic.b2_board.post.domain.Post;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -42,4 +44,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             + " where p.delYn = 'NO'")
     List<Post> findAllFetchInnerJoin();
 
+    // Page 객체 안에는 content(List<Post>), totalPages, totalElement등의 정보를 포함하고있다.
+    Page<Post> findAll(Pageable pageable);
 }

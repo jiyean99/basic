@@ -6,6 +6,10 @@ import com.beyond.basic.b2_board.post.dto.PostListDto;
 import com.beyond.basic.b2_board.post.service.PostService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +20,7 @@ import java.util.List;
 public class PostController {
     // 서비스 계층 DI
     private final PostService postService;
+
     @Autowired
     public PostController(PostService postService) {
         this.postService = postService;
@@ -34,8 +39,11 @@ public class PostController {
     //-id, title, category, authorEmail
     //-삭제된 데이터 조회 제외 => List<Post> findByDelYn(String delYn)
     @GetMapping("/posts")
-    public List<PostListDto> postListDto() {
-        return postService.findAll();
+    // 데이터 요청 형식 : localhost:8080/posts?page=0&size=5&sort=title,asc
+    // 객체 바인등을 Pageable이 알아서 해줌
+    public Page<PostListDto> postListDto(@PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
+                                             Pageable pageable) {
+        return postService.findAll(pageable);
     }
 
     // 3.게시글상세조회(/post/1)
