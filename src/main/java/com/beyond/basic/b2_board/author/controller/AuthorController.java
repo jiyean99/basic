@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -98,6 +100,7 @@ public class AuthorController {
         return ResponseEntity.status(HttpStatus.CREATED).body("OK");
     }
 
+    // 로그인
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthorLoginDto dto) {
         Author author = authorService.login(dto);
@@ -105,6 +108,23 @@ public class AuthorController {
         String token = jwtTokenProvider.createToken(author);
 
         return ResponseEntity.status(HttpStatus.OK).body(token);
+    }
+
+    // 내 정보 조회
+    /// 서비스에서 인증객체를 가져오는 방식
+    /*
+    @GetMapping("/myinfo")
+    public ResponseEntity<?> myInfo(){
+        AuthorDetailDto dto = authorService.myInfo1();
+        return ResponseEntity.status(HttpStatus.OK).body(dto);
+    }
+    */
+
+    /// 컨트롤러에서 인증객체를 가져오는 방식
+    @GetMapping("/myinfo")
+    public ResponseEntity<?> myInfo(@AuthenticationPrincipal String principal){
+        AuthorDetailDto dto = authorService.myInfo(principal);
+        return ResponseEntity.status(HttpStatus.OK).body(dto);
     }
 
     /*
@@ -160,6 +180,7 @@ public class AuthorController {
      * - Controller는 성공 응답(200)만 내려주고, 실패 응답은 Advice에서 내려준다.
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> findById(@PathVariable Long id) {
 
         // [ResponseEntity+try-catch 방식 실습 코드]

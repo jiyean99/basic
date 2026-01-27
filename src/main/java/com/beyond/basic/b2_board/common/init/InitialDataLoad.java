@@ -34,7 +34,7 @@ public class InitialDataLoad implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // admin 계정이 이미 존재하면 중복 생성 방지
-        if (authorRepository.findAllByEmail("admin@naver.com").isPresent()) {
+        if (authorRepository.findByEmail("admin@naver.com").isPresent()) {
             return;
         }
 
