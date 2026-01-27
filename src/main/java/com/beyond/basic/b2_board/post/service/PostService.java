@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -39,14 +37,15 @@ public class PostService {
         // - getPrincipal : email로 세팅한 principal을 꺼내는 작업(Object 설계였어서 toString화 필요)
         String email = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         System.out.println("email === " + email);
-        Author authorByEmail = authorRepository.findAllByEmail(email).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
+        Author authorByEmail = authorRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("가입된 회원이 아닙니다."));
 
         postRepository.save(dto.toEntity(authorByEmail));
     }
 
     @Transactional(readOnly = true)
     public List<PostListDto> findAll() {
-        List<Post> postList = postRepository.findAllByDelYn("NO");
+//        List<Post> postList = postRepository.findAllByDelYn("NO");
+        List<Post> postList = postRepository.findAllInnerJoin();
         List<PostListDto> postListDtoList = new ArrayList<>();
 
         for (Post p : postList) {

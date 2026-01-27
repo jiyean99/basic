@@ -5,7 +5,9 @@ import com.beyond.basic.b2_board.author.dto.*;
 import com.beyond.basic.b2_board.author.repository.*;
 import com.beyond.basic.b2_board.post.domain.Post;
 import com.beyond.basic.b2_board.post.repository.PostRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -226,7 +228,7 @@ public class AuthorService {
 
         // TODO 암호화하지 않은 dto에 들어오고 이를 암호화 해서 author 객체로 만들어줘야함
         Author author = dto.toEntity(passwordEncoder.encode(dto.getPassword()));
-        if (authorRepository.findAllByEmail(author.getEmail()).isPresent()) {
+        if (authorRepository.findByEmail(author.getEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
@@ -254,7 +256,7 @@ public class AuthorService {
         return author;
         */
 
-        Optional<Author> optionalAuthor = authorRepository.findAllByEmail(dto.getEmail());
+        Optional<Author> optionalAuthor = authorRepository.findByEmail(dto.getEmail());
 
         boolean check = true;
 
@@ -363,6 +365,31 @@ public class AuthorService {
         return AuthorDetailDto.fromEntity(author);
     }
 
+    // 인증객체를 서비스 계층에서 가져오는 방식
+    /*
+    @Transactional(readOnly = true)
+    public AuthorDetailDto myInfo1(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        Optional<Author> optionalAuthor = authorRepository.findByEmail(email);
+
+        Author author = optionalAuthor.orElseThrow(
+                () -> new EntityNotFoundException("Entity is not found")
+        );
+        return AuthorDetailDto.fromEntity(author);
+    }
+    */
+
+    // 인증객체를 컨트롤러에서 매개변수로 받아오는 방식
+    @Transactional(readOnly = true)
+    public AuthorDetailDto myInfo(String principal){
+        Optional<Author> optionalAuthor = authorRepository.findByEmail(principal);
+
+        Author author = optionalAuthor.orElseThrow(
+                () -> new EntityNotFoundException("Entity is not found")
+        );
+        return AuthorDetailDto.fromEntity(author);
+    }
+
     public void delete(Long id) {
         /*
          * [delete 워크플로우]
@@ -387,7 +414,7 @@ public class AuthorService {
     }
 
     public Author updatePassword(AuthorUpdatePwDto dto) {
-        Author author = authorRepository.findAllByEmail(dto.getEmail()).orElseThrow(() -> new NoSuchElementException("해당 메일로 가입된 계정이 없습니다."));
+        Author author = authorRepository.findByEmail(dto.getEmail()).orElseThrow(() -> new NoSuchElementException("해당 메일로 가입된 계정이 없습니다."));
         author.updatePassword(dto.getPassword());
 
         // insert, update 모두 save 메서드 사용 -> 변경감지로 대체
