@@ -2,6 +2,8 @@ package com.beyond.basic;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /*
  * =========================================================
@@ -24,8 +26,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - 스프링 부트 애플리케이션의 핵심 설정 어노테이션이다.
  * - 내부적으로 컴포넌트 스캔이 동작하여,
  *   이 클래스의 패키지 하위 경로에 있는 컴포넌트들을 스캔하고 빈으로 등록해 관리한다. (singleton)
+ *
+ * [@EnableScheduling]
+ * - 스케줄링 사용시 필요한 어노테이션
+ *
+ * [@ServletComponentScan]
+ * - 주로 web 서블릿 기반 구성요소(@WebServlet)을 스캔, 자동으로 빈으로 등록.
  */
 @SpringBootApplication
+@EnableScheduling
+@ServletComponentScan
 public class BasicApplication {
 
 	public static void main(String[] args) {

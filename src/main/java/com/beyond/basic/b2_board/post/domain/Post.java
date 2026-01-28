@@ -5,6 +5,8 @@ import com.beyond.basic.b2_board.common.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,6 +25,11 @@ public class Post extends BaseTimeEntity {
     private String category;
     @Builder.Default
     private String delYn = "NO";
+
+    @Builder.Default
+    private String appointment = "NO";
+    @Builder.Default
+    private LocalDateTime appointmentTime = LocalDateTime.now();
     /*
      * TODO [초기설계]
      * - Post에 작성자 식별값을 authorEmail(String)로 직접 저장하는 방식
@@ -110,6 +117,10 @@ public class Post extends BaseTimeEntity {
      */
     public void deletePost() {
         this.delYn = "YES";
+    }
+
+    public void updateAppointment(String appointment){
+        this.appointment = appointment;
     }
 
 }
