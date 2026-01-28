@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -24,6 +26,10 @@ public class PostCreateDto {
 //    @NotBlank(message = "작성자 이메일을 작성하시오.")
 //    private String authorEmail;
     private String delYn;
+    @Builder.Default
+    private String appointment = "NO";
+    @Builder.Default
+    private LocalDateTime appointmentTime = LocalDateTime.now();
 
     public Post toEntity(Author authorByEmail) {
         // TODO [설계변경 1 : authorEmail -> authorId]
@@ -41,6 +47,8 @@ public class PostCreateDto {
                 .contents(this.contents)
                 .category(this.category)
                 .author(authorByEmail)
+                .appointment(this.appointment)
+                .appointmentTime(this.appointmentTime)
                 .build();
     }
 }

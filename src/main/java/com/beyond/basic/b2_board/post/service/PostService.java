@@ -6,15 +6,23 @@ import com.beyond.basic.b2_board.post.domain.Post;
 import com.beyond.basic.b2_board.post.dto.PostCreateDto;
 import com.beyond.basic.b2_board.post.dto.PostDetailDto;
 import com.beyond.basic.b2_board.post.dto.PostListDto;
+import com.beyond.basic.b2_board.post.dto.PostSearchDto;
 import com.beyond.basic.b2_board.post.repository.PostRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +53,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostListDto> findAll(Pageable pageable) {
+    public Page<PostListDto> findAll(Pageable pageable, PostSearchDto postSearchDto) {
 //        List<Post> postList = postRepository.findAllByDelYn("NO");
 //        List<Post> postList = postRepository.findAllInnerJoin();
 
@@ -64,12 +72,39 @@ public class PostService {
         */
 
         // Page 사용으로 인한 구조 변경
-        Page<Post> postList = postRepository.findAll(pageable);
+        //Page<Post> postList = postRepository.findAll(pageable);
+        // Specification 객체 추가(검색을 위한 객체 조립)
+        // - criteriaBuilder : 조건에 따른, 분기에 따른 조립해주는 객체
+        // - root : 엔티티의 컬럼명을 접근하기 위한 객체
+        // - and 또는 or 메서드로 조건 설정
+        Specification<Post> postSpecification = new Specification<Post>() {
+            @Override
+            public Predicate toPredicate(Root<Post> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+                List<Predicate> predicateList = new ArrayList<>();
+                predicateList.add(criteriaBuilder.equal(root.get("delYn"), "NO"));
+                predicateList.add(criteriaBuilder.equal(root.get("appointment"), "NO"));
+                if (postSearchDto.getTitle() != null) {
+                    predicateList.add(criteriaBuilder.like(root.get("title"), "%" + postSearchDto.getTitle() + "%"));
+                } else if (postSearchDto.getContents() != null) {
+                    predicateList.add(criteriaBuilder.like(root.get("contents"), "%" + postSearchDto.getContents() + "%"));
+                } else if (postSearchDto.getCategory() != null) {
+                    predicateList.add(criteriaBuilder.equal(root.get("category"), postSearchDto.getCategory()));
+                }
+
+                Predicate[] predicateArr = new Predicate[predicateList.size()];
+                for (int i = 0; i < predicateArr.length; i++) {
+                    predicateArr[i] = predicateList.get(i);
+                }
+                // predicate에는 검색조건들이 담길것이고, 이 Predicate list를 한줄의 predicate 조립
+                Predicate predicate = criteriaBuilder.and(predicateArr);
+                return predicate;
+            }
+        };
+        Page<Post> postList = postRepository.findAll(postSpecification, pageable);
 
         // Page 객체 안에 Entity->DTO로 쉽게 변환할 수 있는 편의 제공
         return postList.map(post -> PostListDto.fromEntity(post));
     }
-
 
     @Transactional(readOnly = true)
     public PostDetailDto findById(Long id) {

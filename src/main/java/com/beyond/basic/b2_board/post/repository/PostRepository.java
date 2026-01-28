@@ -4,10 +4,14 @@ import com.beyond.basic.b2_board.author.domain.Author;
 import com.beyond.basic.b2_board.post.domain.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,5 +49,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAllFetchInnerJoin();
 
     // Page 객체 안에는 content(List<Post>), totalPages, totalElement등의 정보를 포함하고있다.
-    Page<Post> findAll(Pageable pageable);
+    @EntityGraph(attributePaths = "author")
+    /// 기본 페이징처리만 하는 경우
+    //Page<Post> findAll(Pageable pageable);
+    /// 검색 + 페이징처리까지 할 경우, 아래와 같이 매개변수 선언하면 됨
+    // - Specification, Pageable 순서로 SimpleJpaRepository 클래스에서 정의되고있다.
+    Page<Post> findAll(Specification<Post> specification, Pageable pageable);
+
+    List<Post> findByAppointment(String appointment);
 }

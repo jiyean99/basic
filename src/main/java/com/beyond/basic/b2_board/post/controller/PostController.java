@@ -3,8 +3,10 @@ package com.beyond.basic.b2_board.post.controller;
 import com.beyond.basic.b2_board.post.dto.PostCreateDto;
 import com.beyond.basic.b2_board.post.dto.PostDetailDto;
 import com.beyond.basic.b2_board.post.dto.PostListDto;
+import com.beyond.basic.b2_board.post.dto.PostSearchDto;
 import com.beyond.basic.b2_board.post.service.PostService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 
+@Slf4j
 @RestController
 public class PostController {
     // 서비스 계층 DI
@@ -39,11 +42,13 @@ public class PostController {
     //-id, title, category, authorEmail
     //-삭제된 데이터 조회 제외 => List<Post> findByDelYn(String delYn)
     @GetMapping("/posts")
-    // 데이터 요청 형식 : localhost:8080/posts?page=0&size=5&sort=title,asc
+    // 페이징 데이터 요청 형식 : localhost:8080/posts?page=0&size=5&sort=title,asc
+    // 검색 + 페이징 데이터 요청 형식 : localhost:8080/posts?page=0&size=5&sort=title,asc&title=hello&category=경제
     // 객체 바인등을 Pageable이 알아서 해줌
-    public Page<PostListDto> postListDto(@PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
-                                             Pageable pageable) {
-        return postService.findAll(pageable);
+    public Page<PostListDto> postListDto(@PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+                                         @ModelAttribute PostSearchDto postSearchDto) {
+        log.info("dto : {}", postSearchDto);
+        return postService.findAll(pageable,postSearchDto);
     }
 
     // 3.게시글상세조회(/post/1)
