@@ -5,6 +5,7 @@ import com.beyond.basic.b2_board.author.dto.*;
 import com.beyond.basic.b2_board.author.service.AuthorService;
 import com.beyond.basic.b2_board.common.auth.JwtTokenProvider;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -37,6 +39,7 @@ import java.util.List;
  * (개선) Controller는 정상 흐름만 담당하고,
  *       예외는 전역 예외 핸들러(@RestControllerAdvice)에서 공통 처리한다. [web:52][web:45]
  */
+@Slf4j
 @RestController
 @RequestMapping("/author")
 public class AuthorController {
@@ -80,7 +83,11 @@ public class AuthorController {
     // email 중복 시 에러발생 -> Illegal 400
     @PostMapping("/create")
     // dto에 있는 validation 어노테이션과 Valid 한 쌍
-    public ResponseEntity<?> create(@RequestBody @Valid AuthorCreateDto dto) {
+    public ResponseEntity<?> create(@RequestPart("author") @Valid AuthorCreateDto dto,
+                                    @RequestPart("profileImg") MultipartFile profileImg) {
+//        log.info("author dto : {}", dto);
+//        log.info("author profileimg name : {}", profileImg.getOriginalFilename());
+
         /// 아래 예외처리는 Exception Handler에서 전역적으로 예외처리하고있다.
         /// (기존 try-catch 예외처리 실습 코드는 "학습 흔적"으로 주석 보존)
         /// - 전역 예외 핸들러 도입 후에는 Controller가 try-catch를 가질 필요가 없음
@@ -96,7 +103,7 @@ public class AuthorController {
 //            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commonErrorDto);
 //        }
 
-        authorService.save(dto);
+        authorService.save(dto, profileImg);
         return ResponseEntity.status(HttpStatus.CREATED).body("OK");
     }
 
