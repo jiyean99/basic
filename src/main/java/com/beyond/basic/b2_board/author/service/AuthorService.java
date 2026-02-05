@@ -7,11 +7,16 @@ import com.beyond.basic.b2_board.post.domain.Post;
 import com.beyond.basic.b2_board.post.repository.PostRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -100,6 +105,8 @@ import java.util.stream.Collectors;
 //@RequiredArgsConstructor
 @Transactional
 public class AuthorService {
+    @Value("${aws.s3.bucket1}")
+    private String bucket;
 
     /*
      * =========================================================
@@ -157,13 +164,15 @@ public class AuthorService {
     private final AuthorRepository authorRepository;
     private final PostRepository postRepository;
     private final PasswordEncoder passwordEncoder;
+    private final S3Client s3Client;
 
     @Autowired
-    public AuthorService(AuthorRepository authorRepository, PostRepository postRepository, PasswordEncoder passwordEncoder) {
+    public AuthorService(AuthorRepository authorRepository, PostRepository postRepository, PasswordEncoder passwordEncoder, S3Client s3Client) {
         // 해당 생성자를 주입받겠다는 의미로 해당 어노테이션 추가(생성자가 하나밖에 없을 때에는 생략 가능)
         this.authorRepository = authorRepository;
         this.postRepository = postRepository;
         this.passwordEncoder = passwordEncoder;
+        this.s3Client = s3Client;
     }
 
     /*
@@ -202,7 +211,7 @@ public class AuthorService {
      * findById: 단건 조회(Optional) -> 없으면 예외 -> dto 변환
      * delete: 단건 조회(Optional) -> 없으면 예외 -> 삭제
      */
-    public void save(AuthorCreateDto dto) {
+    public void save(AuthorCreateDto dto, MultipartFile profileImg) {
         /*
          * [save 워크플로우]
          * 1) 입력(dto) -> entity 조립
@@ -244,6 +253,30 @@ public class AuthorService {
 
         // 예외 발생 시 @Transactional 어노테이션에 의해 rollback 처리
         // authorRepository.findById(10L).orElseThrow(() -> new NoSuchElementException("롤백 테스트를 위한 코드입니다."));
+
+        //TODO S3 관련 템플릿 코드
+        if (profileImg != null){
+            // 파일 업로드를 위한 저장객체 구성 : s3Client.putObject(저장객체, 이미지)
+            String fileName = "uesr-" + author.getId() + "-profileimage-" + profileImg.getOriginalFilename();
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(fileName) // 파일명
+                    .contentType(profileImg.getContentType()) // images/jpeg, video/mp4 등의 컨텐츠 타입 정보
+                    .build();
+            /// (1) AWS에 이미지 업로드(byte 형태로 변환해서 업로드)
+            try {
+                s3Client.putObject(request, RequestBody.fromBytes(profileImg.getBytes()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            /// (2) AWS의 이미지 URL 추출
+            String imgUrl = s3Client.utilities().getUrl(a->a.bucket(bucket).key(fileName)).toExternalForm();
+
+            // 외부와의 통신이기때문에 영속성컨텍스트가 실행되지 않을 수 있다는 우려가 있어 코드의 위치를 하단으로 옯기고,
+            // 이에 따라 프로필이미지 데이터를 별도로 업데이트 처리 수행
+            author.updateProfileImageUrl(imgUrl);
+        }
+
     }
 
     public Author login(AuthorLoginDto dto) {
@@ -381,7 +414,7 @@ public class AuthorService {
 
     // 인증객체를 컨트롤러에서 매개변수로 받아오는 방식
     @Transactional(readOnly = true)
-    public AuthorDetailDto myInfo(String principal){
+    public AuthorDetailDto myInfo(String principal) {
         Optional<Author> optionalAuthor = authorRepository.findByEmail(principal);
 
         Author author = optionalAuthor.orElseThrow(
