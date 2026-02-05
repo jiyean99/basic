@@ -33,7 +33,11 @@ spring:
     hibernate:
       ddl-auto: update
     show_sql: true
-
+  # 스프링의 파일업로드 시 10MB가 디폴트
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1000MB
 # mapper 파일(mybatis의 실질 쿼리 파일)의 위치 명시
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml
